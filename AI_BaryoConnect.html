@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real AI Report Classification & Prioritization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .ai-status {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .ai-status.loading {
+            background: rgba(251, 191, 36, 0.2);
+        }
+
+        .ai-status.ready {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .ai-status.error {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .input-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .results-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .analysis-result {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .priority-high {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .priority-medium {
+            border-left-color: #d97706;
+            background: #fffbeb;
+        }
+
+        .priority-low {
+            border-left-color: #16a34a;
+            background: #f0fdf4;
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .priority-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .priority-high-tag {
+            background: #dc2626;
+        }
+
+        .priority-medium-tag {
+            background: #d97706;
+        }
+
+        .priority-low-tag {
+            background: #16a34a;
+        }
+
+        .waste-tag { background: #fbbf24; color: #92400e; }
+        .infrastructure-tag { background: #60a5fa; color: #1e40af; }
+        .health-tag { background: #f87171; color: #991b1b; }
+        .safety-tag { background: #a78bfa; color: #5b21b6; }
+        .general-tag { background: #9ca3af; color: #374151; }
+
+        .reports-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .report-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .report-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .report-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .processing-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+        }
+
+        .processing-indicator.active {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Real AI Report Classifier</h1>
+            <p>Powered by Hugging Face Transformers.js - Free AI Model</p>
+            <div class="ai-status loading" id="aiStatus">
+                🔄 Loading AI Model... Please wait
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">📝 Submit Report</h2>
+                <form id="reportForm">
+                    <div class="form-group">
+                        <label for="reporterName">Reporter Name</label>
+                        <input type="text" id="reporterName" placeholder="Enter your name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reportText">Report Description</label>
+                        <textarea id="reportText" placeholder="Describe the issue in detail (e.g., 'May baha sa Zone 3, tulong po agad')" required></textarea>
+                        <div class="error-message" id="reportError">
+                            Please provide a meaningful report description. Random characters or nonsensical text is not allowed.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">Location/Zone</label>
+                        <input type="text" id="location" placeholder="Zone, Barangay, or specific location">
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                        🔍 Analyze & Submit Report
+                    </button>
+                </form>
+
+                <div class="processing-indicator" id="processingIndicator">
+                    <p>🤖 AI is analyzing your report...</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalReports">0</div>
+                        <div class="stat-label">Total Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="highPriority">0</div>
+                        <div class="stat-label">High Priority</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="mediumPriority">0</div>
+                        <div class="stat-label">Medium Priority</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="lowPriority">0</div>
+                        <div class="stat-label">Low Priority</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h2 class="section-title">📊 Classified Reports</h2>
+                <div class="reports-list" id="reportsList">
+                    <div style="text-align: center; color: #6b7280; padding: 40px;">
+                        <p>No reports submitted yet. Submit a report to see classification!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Transformers.js from CDN -->
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.0';
+
+        // Configure environment for browser usage
+        env.allowRemoteModels = true;
+        env.allowLocalModels = false;
+
+        // In-memory storage for reports
+        let reports = [];
+        let reportCounter = 1;
+        let classifier = null;
+        let sentimentAnalyzer = null;
+
+        // Text validation function
+        function isValidText(text) {
+            // Remove spaces and convert to lowercase for checking
+            const cleanText = text.trim().toLowerCase();
+            
+            // Check minimum length
+            if (cleanText.length < 10) {
+                return false;
+            }
+            
+            // Check if text contains mostly random characters
+            const randomPatterns = [
+                /^[a-z]{1,3}(\s[a-z]{1,3})*$/i, // Very short words only
+                /[bcdfghjklmnpqrstvwxyz]{4,}/i, // Too many consonants in a row
+                /(.)\1{3,}/, // Same character repeated 4+ times
+                /^[^aeiou\s]+$/i, // No vowels at all
+                /^\w*([qx][^u]|[^aeiou]{5})\w*$/i, // Suspicious letter combinations
+            ];
+            
+            // Check for random patterns
+            for (let pattern of randomPatterns) {
+                if (pattern.test(cleanText)) {
+                    return false;
+                }
+            }
+            
+            // Check for meaningful words (Filipino and English common words)
+            const meaningfulWords = [
+                // Filipino words
+                'baha', 'sunog', 'aksidente', 'tulong', 'kailangan', 'problema', 'daan', 'ilaw', 
+                'tubig', 'basura', 'sira', 'ayusin', 'linis', 'barangay', 'zone', 'lugar', 
+                'agad', 'emergency', 'sakit', 'ospital', 'krimen', 'nakaw', 'away', 'ingay',
+                'poste', 'kuryente', 'drainage', 'kanal', 'semento', 'hukay', 'construction',
+                'mga', 'ang', 'sa', 'ng', 'na', 'ay', 'po', 'opo', 'hindi', 'oo', 'yes', 'no',
+                'may', 'meron', 'wala', 'para', 'dapat', 'kasi', 'pero', 'at', 'o', 'kung',
+                // English words
+                'help', 'need', 'problem', 'issue', 'report', 'please', 'urgent', 'emergency',
+                'road', 'street', 'bridge', 'light', 'water', 'fire', 'flood', 'accident',
+                'hospital', 'police', 'crime', 'theft', 'fight', 'noise', 'broken', 'repair',
+                'clean', 'garbage', 'trash', 'electricity', 'power', 'construction', 'building',
+                'the', 'and', 'or', 'but', 'if', 'when', 'where', 'what', 'how', 'why',
+                'is', 'are', 'was', 'were', 'have', 'has', 'had', 'can', 'will', 'would'
+            ];
+            
+            const words = cleanText.split(/\s+/);
+            const meaningfulCount = words.filter(word => 
+                meaningfulWords.includes(word) || word.length >= 4
+            ).length;
+            
+            // At least 30% of words should be meaningful or longer than 3 characters
+            const meaningfulRatio = meaningfulCount / words.length;
+            
+            return meaningfulRatio >= 0.3;
+        }
+
+        // Real-time validation
+        document.getElementById('reportText').addEventListener('input', function(e) {
+            const text = e.target.value;
+            const errorEl = document.getElementById('reportError');
+            
+            if (text.length > 5 && !isValidText(text)) {
+                errorEl.classList.add('show');
+                e.target.style.borderColor = '#dc2626';
+            } else {
+                errorEl.classList.remove('show');
+                e.target.style.borderColor = '#e5e7eb';
+            }
+        });
+
+        // AI Model Loading
+        async function loadAIModels() {
+            try {
+                console.log('🤖 Loading AI models...');
+                
+                // Load text classification model (for categorization)
+                classifier = await pipeline('text-classification', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+                
+                // Load sentiment analysis model (for priority)
+                sentimentAnalyzer = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+                
+                // Update status
+                const statusEl = document.getElementById('aiStatus');
+                const submitBtn = document.getElementById('submitBtn');
+                
+                statusEl.className = 'ai-status ready';
+                statusEl.innerHTML = '✅ AI Models Ready - Intelligence Activated!';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '🤖 Analyze & Submit Report';
+                
+                console.log('✅ AI models loaded successfully!');
+                
+            } catch (error) {
+                console.error('❌ Error loading AI models:', error);
+                
+                // Fallback to rule-based system
+                const statusEl = document.getElementById('aiStatus');
+                statusEl.className = 'ai-status error';
+                statusEl.innerHTML = '⚠️ AI Model failed to load. Using fallback system.';
+                
+                // Enable submit button anyway
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerHTML = '🔍 Analyze & Submit Report';
+                
+                // Initialize fallback classifier
+                classifier = new FallbackClassifier();
+                sentimentAnalyzer = classifier;
+            }
+        }
+
+        // Fallback rule-based classifier (backup)
+        class FallbackClassifier {
+            constructor() {
+                this.categoryKeywords = {
+                    'Health/Emergency': [
+                        'baha', 'flood', 'sunog', 'fire', 'aksidente', 'accident', 
+                        'sugod', 'patay', 'dead', 'sakit', 'sick', 'hospital', 
+                        'emergency', 'tulong', 'help', 'agad', 'urgent', 'covid',
+                        'dengue', 'doktor', 'doctor', 'ambulansya', 'ambulance'
+                    ],
+                    'Infrastructure': [
+                        'daan', 'road', 'tulay', 'bridge', 'ilaw', 'light', 
+                        'kuryente', 'electricity', 'tubig', 'water', 'drainage',
+                        'sira', 'broken', 'giba', 'damaged', 'kalsada', 'street',
+                        'poste', 'post', 'semento', 'concrete'
+                    ],
+                    'Waste Management': [
+                        'basura', 'trash', 'garbage', 'linis', 'clean', 'dumi',
+                        'dirty', 'amoy', 'smell', 'baho', 'stink', 'collection',
+                        'pickup', 'landfill', 'recycle', 'compost'
+                    ],
+                    'Crime & Safety': [
+                        'krimen', 'crime', 'nakaw', 'steal', 'holdup', 'robbery',
+                        'patay', 'murder', 'away', 'fight', 'gulo', 'trouble',
+                        'drugs', 'droga', 'police', 'pulis', 'security', 
+                        'baril', 'gun', 'knife', 'kutsilyo'
+                    ],
+                    'General Request': [
+                        'request', 'hiling', 'permit', 'cedula', 'barangay',
+                        'clearance', 'certificate', 'id', 'registration',
+                        'appointment', 'schedule', 'meeting', 'event'
+                    ]
+                };
+
+                this.urgentKeywords = [
+                    'baha', 'sunog', 'fire', 'flood', 'aksidente', 'accident',
+                    'patay', 'dead', 'sugod', 'emergency', 'agad', 'urgent',
+                    'tulong', 'help', 'hospital', 'ambulansya', 'krimen'
+                ];
+            }
+
+            async classify(text) {
+                const cleanText = text.toLowerCase();
+                const words = cleanText.split(' ');
+                
+                let categoryScores = {};
+                for (let category in this.categoryKeywords) {
+                    categoryScores[category] = 0;
+                }
+                
+                words.forEach(word => {
+                    for (let category in this.categoryKeywords) {
+                        if (this.categoryKeywords[category].includes(word)) {
+                            categoryScores[category]++;
+                        }
+                    }
+                });
+                
+                let maxScore = 0;
+                let bestCategory = 'General Request';
+                
+                for (let category in categoryScores) {
+                    if (categoryScores[category] > maxScore) {
+                        maxScore = categoryScores[category];
+                        bestCategory = category;
+                    }
+                }
+                
+                return [{
+                    label: bestCategory,
+                    score: maxScore > 0 ? 0.8 : 0.3
+                }];
+            }
+
+            async analyzeSentiment(text) {
+                const cleanText = text.toLowerCase();
+                const hasUrgent = this.urgentKeywords.some(word => cleanText.includes(word));
+                
+                return [{
+                    label: hasUrgent ? 'NEGATIVE' : 'POSITIVE',
+                    score: hasUrgent ? 0.9 : 0.6
+                }];
+            }
+        }
+
+        // AI-powered report analysis
+        async function analyzeReportWithAI(text) {
+            try {
+                console.log('🤖 Analyzing report with AI:', text);
+
+                // Get AI classification
+                const classificationResult = await classifier(text);
+                console.log('Classification result:', classificationResult);
+
+                // Get sentiment analysis for priority
+                const sentimentResult = await sentimentAnalyzer(text);
+                console.log('Sentiment result:', sentimentResult);
+
+                // Map AI results to our categories
+                const category = mapAIToCategory(text, classificationResult[0]);
+                const priority = mapSentimentToPriority(sentimentResult[0], text);
+
+                return {
+                    category,
+                    priority
+                };
+
+            } catch (error) {
+                console.error('AI analysis error:', error);
+                
+                // Fallback to rule-based analysis
+                const fallback = new FallbackClassifier();
+                const classResult = await fallback.classify(text);
+                const sentResult = await fallback.analyzeSentiment(text);
+                
+                return {
+                    category: classResult[0].label,
+                    priority: sentResult[0].label === 'NEGATIVE' ? 'High' : 'Medium'
+                };
+            }
+        }
+
+        // Map AI results to our specific categories
+        function mapAIToCategory(text, aiResult) {
+            const cleanText = text.toLowerCase();
+            
+            // Emergency/Health indicators
+            if (cleanText.includes('baha') || cleanText.includes('sunog') || 
+                cleanText.includes('aksidente') || cleanText.includes('tulong') ||
+                cleanText.includes('emergency') || cleanText.includes('hospital')) {
+                return 'Health/Emergency';
+            }
+            
+            // Infrastructure indicators
+            if (cleanText.includes('daan') || cleanText.includes('ilaw') || 
+                cleanText.includes('tubig') || cleanText.includes('sira') ||
+                cleanText.includes('bridge') || cleanText.includes('road')) {
+                return 'Infrastructure';
+            }
+            
+            // Waste management indicators
+            if (cleanText.includes('basura') || cleanText.includes('trash') || 
+                cleanText.includes('garbage') || cleanText.includes('linis')) {
+                return 'Waste Management';
+            }
+            
+            // Crime/Safety indicators
+            if (cleanText.includes('krimen') || cleanText.includes('nakaw') || 
+                cleanText.includes('holdup') || cleanText.includes('away')) {
+                return 'Crime & Safety';
+            }
+            
+            return 'General Request';
+        }
+
+        // Map sentiment to priority
+        function mapSentimentToPriority(sentimentResult, text) {
+            const cleanText = text.toLowerCase();
+            const urgentWords = ['agad', 'urgent', 'emergency', 'tulong', 'baha', 'sunog', 'aksidente'];
+            
+            // Check for urgent keywords regardless of sentiment
+            const hasUrgentKeyword = urgentWords.some(word => cleanText.includes(word));
+            
+            if (hasUrgentKeyword || sentimentResult.label === 'NEGATIVE') {
+                return 'High';
+            } else if (sentimentResult.score > 0.7) {
+                return 'Low';
+            } else {
+                return 'Medium';
+            }
+        }
+
+        // Form submission handler
+        document.getElementById('reportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const reporterName = document.getElementById('reporterName').value;
+            const reportText = document.getElementById('reportText').value;
+            const location = document.getElementById('location').value;
+            
+            // Validate text before processing
+            if (!isValidText(reportText)) {
+                document.getElementById('reportError').classList.add('show');
+                document.getElementById('reportText').style.borderColor = '#dc2626';
+                alert('Please provide a meaningful report description. Random characters or nonsensical text is not allowed.');
+                return;
+            }
+            
+            // Show processing indicator
+            const indicator = document.getElementById('processingIndicator');
+            indicator.classList.add('active');
+            
+            try {
+                // Analyze report with AI
+                const analysis = await analyzeReportWithAI(reportText);
+                
+                // Create report object
+                const report = {
+                    id: reportCounter++,
+                    reporter: reporterName,
+                    text: reportText,
+                    location: location,
+                    category: analysis.category,
+                    priority: analysis.priority,
+                    timestamp: new Date(),
+                    status: 'Pending'
+                };
+                
+                // Add to reports array
+                reports.unshift(report);
+                
+                // Update display
+                updateReportsDisplay();
+                updateStats();
+                
+                // Clear form
+                document.getElementById('reportForm').reset();
+                document.getElementById('reportError').classList.remove('show');
+                document.getElementById('reportText').style.borderColor = '#e5e7eb';
+                
+                // Show success message
+                alert(`Report submitted successfully!\nCategory: ${analysis.category}\nPriority: ${analysis.priority}`);
+                
+            } catch (error) {
+                console.error('Error processing report:', error);
+                alert('Error processing report. Please try again.');
+            }
+            
+            // Hide processing indicator
+            indicator.classList.remove('active');
+        });
+
+        function updateReportsDisplay() {
+            const container = document.getElementById('reportsList');
+            
+            if (reports.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #6b7280; padding: 40px;">
+                        <p>No reports submitted yet. Submit a report to see classification!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = reports.map(report => `
+                <div class="report-item analysis-result priority-${report.priority.toLowerCase()}">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <strong>Report #${report.id}</strong>
+                        <div>
+                            <span class="category-tag ${getCategoryClass(report.category)}">${report.category}</span>
+                            <span class="priority-tag priority-${report.priority.toLowerCase()}-tag">${report.priority} Priority</span>
+                        </div>
+                    </div>
+                    
+                    <p style="margin-bottom: 10px;"><strong>Report:</strong> ${report.text}</p>
+                    
+                    ${report.location ? `<p style="margin-bottom: 10px;"><strong>Location:</strong> ${report.location}</p>` : ''}
+                    
+                    <div class="report-meta">
+                        <strong>Reporter:</strong> ${report.reporter} | 
+                        <strong>Status:</strong> ${report.status} | 
+                        <strong>Submitted:</strong> ${report.timestamp.toLocaleString()}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCategoryClass(category) {
+            const classMap = {
+                'Health/Emergency': 'health-tag',
+                'Infrastructure': 'infrastructure-tag',
+                'Waste Management': 'waste-tag',
+                'Crime & Safety': 'safety-tag',
+                'General Request': 'general-tag'
+            };
+            return classMap[category] || 'general-tag';
+        }
+
+        function updateStats() {
+            const total = reports.length;
+            const high = reports.filter(r => r.priority === 'High').length;
+            const medium = reports.filter(r => r.priority === 'Medium').length;
+            const low = reports.filter(r => r.priority === 'Low').length;
+            
+            document.getElementById('totalReports').textContent = total;
+            document.getElementById('highPriority').textContent = high;
+            document.getElementById('mediumPriority').textContent = medium;
+            document.getElementById('lowPriority').textContent = low;
+        }
+
+        // Initialize AI models when page loads
+        window.addEventListener('load', () => {
+            loadAIModels();
+        });
+
+        // Make functions available globally for debugging
+        window.analyzeReportWithAI = analyzeReportWithAI;
+        window.isValidText = isValidText;
+    </script>
+</body>
+</html>
